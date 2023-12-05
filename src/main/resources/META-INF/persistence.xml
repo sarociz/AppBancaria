@@ -5,5 +5,17 @@
              version="3.0">
     <persistence-unit name="default">
 
+        <properties>
+            <property name="hibernate.connection.url"
+                      value="jdbc:mysql://localhost:33060/AppBancaria"/>
+            <property name="hibernate.connection.driver_class" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="hibernate.connection.password" value="12345Abcde"/>
+            <property name="hibernate.connection.username" value="root"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.dialect"
+                      value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+        </properties>
+
     </persistence-unit>
 </persistence>
