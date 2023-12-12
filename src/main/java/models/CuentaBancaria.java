@@ -29,7 +29,7 @@ public class CuentaBancaria {
     @NotNull
     private Date fechaCreacion;
 
-    @ManyToOne(optional = true, fetch = FetchType.EAGER, cascade = {CascadeType.REMOVE, CascadeType.PERSIST})
+    @ManyToOne(optional = true, fetch = FetchType.EAGER, cascade = {CascadeType.ALL})
     @JoinColumn(name = "usuarioID", referencedColumnName = "id")
     private Usuario usuario;
 

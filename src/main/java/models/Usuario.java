@@ -32,7 +32,7 @@ public class Usuario {
     @Column(length = 50)
     @NotNull
     private String contrasena;
-    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
     private List<CuentaBancaria> cuentaBancariaList = new ArrayList<>();
 
     public Usuario() {
