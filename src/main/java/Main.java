@@ -1,8 +1,10 @@
+import GUI.LoginGUI;
 import dao.CuentaBancariaImpl;
 import dao.UsuarioDaoImpl;
 import models.CuentaBancaria;
 import models.Usuario;
 
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,10 +18,10 @@ public class Main {
         Usuario usuario = new Usuario();
         CuentaBancaria cuentaBancaria = new CuentaBancaria();
 
-        usuario = new Usuario("Juan", "Pérez", 25, "juanito123", "contrasena123");
-        cuentaBancaria = new CuentaBancaria("123456789", 1000.0, "Cuenta Corriente", new Date(), usuario);
-
-        cuentaBancariaDao.create(cuentaBancaria);
+//        usuario = new Usuario("Juan", "Pérez", 25, "juanito123", "contrasena123");
+//        cuentaBancaria = new CuentaBancaria("123456789", 1000.0, "Cuenta Corriente", new Date(), usuario);
+//
+//        cuentaBancariaDao.create(cuentaBancaria);
         //crear usuario
 //        System.out.println("Introduce el nombre");
 //        usuario.setNombre(br.readLine());
@@ -35,6 +37,20 @@ public class Main {
 //        System.out.println("Introduce el numero de cuenta");
 //        cuentaBancaria.setNumeroCuenta(br.readLine());
 //        System.out.println("Introduce el saldo");
+
+        // Crea una instancia de JFrame
+        JFrame frame = new JFrame("Login");
+        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\banco.png");
+        frame.setIconImage(icon.getImage());
+
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        LoginGUI login = new LoginGUI(usuarioDao);
+        frame.setContentPane(login.getPanelLogin());
+
+        // Realiza el ajuste y muestra la ventana
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
 
     }
 }

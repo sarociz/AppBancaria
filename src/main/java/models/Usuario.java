@@ -29,7 +29,7 @@ public class Usuario {
     @NotNull
     private String usuario;
 
-    @Column(length = 50)
+    @Column(length = 5000)
     @NotNull
     private String contrasena;
     @OneToMany(mappedBy = "usuario", fetch = FetchType.LAZY)
