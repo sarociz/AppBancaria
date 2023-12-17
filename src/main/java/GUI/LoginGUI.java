@@ -27,6 +27,8 @@ public class LoginGUI {
     }
 
     public LoginGUI(UsuarioDaoImpl usuarioDAO) {
+        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\logo (2).png");
+        labelLogo.setIcon(icon);
         aceptarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

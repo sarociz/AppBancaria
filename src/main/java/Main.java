@@ -1,4 +1,5 @@
 import GUI.LoginGUI;
+import GUI.MenuTransferencias;
 import dao.CuentaBancariaImpl;
 import dao.UsuarioDaoImpl;
 import models.CuentaBancaria;
@@ -40,17 +41,22 @@ public class Main {
 
         // Crea una instancia de JFrame
         JFrame frame = new JFrame("Login");
-        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\banco.png");
+        JFrame frame2 = new JFrame("Transferencias");
+        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\banco.png");
         frame.setIconImage(icon.getImage());
-
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         LoginGUI login = new LoginGUI(usuarioDao);
+        MenuTransferencias menuTransferencias = new MenuTransferencias();
         frame.setContentPane(login.getPanelLogin());
+        frame2.setContentPane(menuTransferencias.getPanelMenuTransferencias());
 
         // Realiza el ajuste y muestra la ventana
         frame.pack();
+        frame2.pack();
         frame.setLocationRelativeTo(null);
+        frame2.setLocationRelativeTo(null);
         frame.setVisible(true);
+        frame2.setVisible(true);
 
     }
 }
