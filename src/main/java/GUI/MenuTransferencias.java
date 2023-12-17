@@ -26,6 +26,8 @@ public class MenuTransferencias {
     private JLabel labelSaldoDisponible;
     private JTextField TFCuentaDestino;
     private JTextField TFNombreApell;
+    private JButton aceptarButton;
+    private JButton buttonVolver;
     //--------------------
 
     public MenuTransferencias() {
@@ -50,6 +52,12 @@ public class MenuTransferencias {
             }
         });
 
+        buttonVolver.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
     }
 
     public JPanel getPanelMenuTransferencias() {

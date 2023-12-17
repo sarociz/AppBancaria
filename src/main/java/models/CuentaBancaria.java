@@ -5,6 +5,8 @@ import com.sun.istack.Nullable;
 import jakarta.persistence.*;
 
 import javax.xml.crypto.Data;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 @Entity
@@ -40,7 +42,8 @@ public class CuentaBancaria {
         this.numeroCuenta = numeroCuenta;
         this.saldo = saldo;
         this.tipoCuenta = tipoCuenta;
-        this.fechaCreacion = fechaCreacion;
+        LocalDate localDate = LocalDate.now();
+        this.fechaCreacion = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         this.usuario = usuario;
     }
 

@@ -30,14 +30,15 @@ public class LoginyRegistro {
     }
 
 
-    private static void registrarUsuario(UsuarioDaoImpl usuarioDao,String nombre, String apellidos, int edad, String nomusu, String contrasena) {
-        String hashContrasena = calcularHash(contrasena);
+    public static void registrarUsuario(UsuarioDaoImpl usuarioDao, Usuario usuario) {
+        String hashContrasena = calcularHash(usuario.getContrasena());
 
-        if (usuarioDao.existeUsuario(nomusu)) {
+        if (usuarioDao.existeUsuario(usuario.getUsuario())) {
             JOptionPane.showMessageDialog(null, "Nombre de usuario en uso. Por favor, elija otro.");
             return;
         }
-        usuario = new Usuario(nombre, apellidos, edad, nomusu, hashContrasena);
+        usuario.setContrasena(hashContrasena);
+
         usuarioDao.create(usuario);
         JOptionPane.showMessageDialog(null,"¡Registro exitoso!");
 

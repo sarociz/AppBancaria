@@ -26,7 +26,16 @@ public class AreaPersonal {
         buttonTranferencia.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                AreaPersonal areaPersonal = new AreaPersonal();
+                MenuTransferencias menuTransferencias = new MenuTransferencias();
 
+                JFrame frame = new JFrame("Transferencias");
+                frame.setContentPane(menuTransferencias.getPanelMenuTransferencias());
+
+                // Realiza el ajuste y muestra la ventana
+                frame.pack();
+                frame.setLocationRelativeTo(null);
+                frame.setVisible(true);
             }
         });
     }

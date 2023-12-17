@@ -8,6 +8,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import static ClienteServidor.Cliente.conectarCliente;
 import static Operaciones.LoginyRegistro.iniciarSesion;
 
 public class LoginGUI {
@@ -40,8 +41,8 @@ public class LoginGUI {
                     return;
                 }else{
                     iniciarSesion(usuarioDAO, TFUsuario.getText(), new String(PFContrasena.getPassword()));
+                    conectarCliente(TFUsuario.getText());
                     AreaPersonal areaPersonal = new AreaPersonal();
-
                     JFrame frame = new JFrame("Área Personal");
                     frame.setContentPane(areaPersonal.getPanelAreaPersonal());
 
