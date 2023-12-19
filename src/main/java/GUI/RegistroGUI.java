@@ -2,12 +2,17 @@ package GUI;
 
 import ClienteServidor.Client;
 import ClienteServidor.FuncionesCifrado;
+import dao.UsuarioDaoImpl;
+import models.CuentaBancaria;
+import models.Usuario;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.util.List;
 
 public class RegistroGUI {
     private JPanel panelRegistro;
@@ -21,46 +26,48 @@ public class RegistroGUI {
     private JLabel icono;
     Client cliente = new Client();
     private boolean aceptarDocumento = false;
+    List<CuentaBancaria> cuentaBancariaList;
 
-    public RegistroGUI() {
+    public RegistroGUI(KeyPair keyPair, UsuarioDaoImpl usuarioDao) throws Exception {
         ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\logo (2).png");
         icono.setIcon(icon);
+        recibirDocumento();
         aceptarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String usuario = TFUsuario.getText();
+                String nomusuario = TFUsuario.getText();
                 String contrasena = new String(PFCantrasena.getPassword());
                 String nombre = TFNombre.getText();
                 String apellido = TFApellidos.getText();
                 int edad = Integer.parseInt(TFEdad.getText());
                 String correo = TFCorreo.getText();
 
-                if (usuario.isEmpty() || contrasena.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || edad == 0) {
+                if (nomusuario.isEmpty() || contrasena.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || edad == 0) {
                     JOptionPane.showMessageDialog(null, "Faltan datos", "Registro", JOptionPane.ERROR_MESSAGE);
                 } else {
                     try {
-                        cliente.objectOutputStream.writeObject(1);
-                        cliente.registrar(nombre, apellido, edad, correo, usuario, contrasena);
-
-                        boolean usuarioExiste = (boolean) cliente.objectInputStream.readObject();
-
-                        if (usuarioExiste) {
-                            String cuentaCifrada = (String) cliente.objectInputStream.readObject();
-                            cliente.objectInputStream.readObject();
-                            cliente.objectInputStream.readObject();
-
-                            PrivateKey privateKey = (PrivateKey) cliente.objectInputStream.readObject();
-
-                            String cuentaDescifrada = FuncionesCifrado.descifrar(cuentaCifrada, privateKey);
-
-                            JOptionPane.showMessageDialog(null, "Registro exitoso.\n" +
-                                    "El número de cuenta es: " + cuentaDescifrada, "Registro", JOptionPane.INFORMATION_MESSAGE);
-
-                            //baseFrame.dispose();
-                            //LogIn.abrirVentanaPrincipal(cliente);
+                        if (TFApellidos.getText().isEmpty() || TFApellidos.getText().isEmpty() || TFEdad.getText().isEmpty() || TFCorreo.getText().isEmpty() || TFUsuario.getText().isEmpty()) {
+                            JOptionPane.showMessageDialog(null, "Campos vacios", "Registro", JOptionPane.ERROR_MESSAGE);
                         } else {
-                            String mensaje = (String) cliente.objectInputStream.readObject();
-                            JOptionPane.showMessageDialog(null, mensaje, "Registro", JOptionPane.ERROR_MESSAGE);
+                            Client.registrar(nomusuario, apellido, edad, correo, nombre, apellido);
+
+                            boolean usuarioExiste = (boolean) Client.objectInputStream.readObject();
+                            Usuario usuario = (Usuario) Client.objectInputStream.readObject();
+                            cuentaBancariaList = (List<CuentaBancaria>) Client.objectInputStream.readObject();
+
+                            if (usuarioExiste) {
+                                AreaPersonal areaPersonal = new AreaPersonal(keyPair ,usuario, cuentaBancariaList);
+                                JFrame frame = new JFrame("Área Personal");
+                                frame.setContentPane(areaPersonal.getPanelAreaPersonal());
+
+                                // Realiza el ajuste y muestra la ventana
+                                frame.pack();
+                                frame.setLocationRelativeTo(null);
+                                frame.setVisible(true);
+
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Registro incorrecto", "Registro", JOptionPane.ERROR_MESSAGE);
+                            }
                         }
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
@@ -68,28 +75,31 @@ public class RegistroGUI {
                         throw new RuntimeException(ex);
                     }
                 }
-
+                limpiarComponentes();
 
             }
         });
     }
-    private void recibirDocumento(Client cliente) throws Exception {
-        String documentoRecibido = (String) cliente.objectInputStream.readObject();
-        String firmaRecibida = (String) cliente.objectInputStream.readObject();
 
-        //boolean firmaValida = FuncionesComunes.verificarFirma(documentoRecibido, firmaRecibida, cliente.clavePublicaServidor);
+    private void recibirDocumento() throws Exception {
+        String documentoRecibido = (String) Client.objectInputStream.readObject();
+        String firmaRecibida = (String) Client.objectInputStream.readObject();
+
+        boolean firmaValida = FuncionesCifrado.verificarFirma(documentoRecibido, firmaRecibida, Client.clavePublicaServidor);
 
         aceptarDocumento = false;
-//        if (firmaValida) {
-//            int respuesta = JOptionPane.showConfirmDialog(null, documentoRecibido + "\n" +
-//                    "¿Acepta los términos para utilizar esta aplicación?", "DOCUMENTO", JOptionPane.YES_NO_OPTION);
-//
-//            if (respuesta == JOptionPane.YES_OPTION) {
-//                aceptarDocumento = true;
-//            }
-//        }
-//        cliente.objectOutputStream.writeObject(aceptarDocumento);
+        if (firmaValida) {
+            int respuesta = JOptionPane.showConfirmDialog(null, documentoRecibido, "Terminos de uso", JOptionPane.YES_NO_OPTION);
+
+            if (respuesta == JOptionPane.YES_OPTION) {
+                aceptarDocumento = true;
+            }
+        }
+        Client.objectOutputStream.writeObject(aceptarDocumento);
+
+
     }
+
     private void limpiarComponentes() {
         TFNombre.setText("");
         TFApellidos.setText("");
@@ -98,29 +108,6 @@ public class RegistroGUI {
         PFCantrasena.setText("");
     }
 
-    public JTextField getTFNombre() {
-        return TFNombre;
-    }
-
-    public JTextField getTFApellidos() {
-        return TFApellidos;
-    }
-
-    public JTextField getTFEdad() {
-        return TFEdad;
-    }
-
-    public JTextField getTFUsuario() {
-        return TFUsuario;
-    }
-
-    public JPasswordField getPFCantrasena() {
-        return PFCantrasena;
-    }
-
-    public JButton getAceptarButton() {
-        return aceptarButton;
-    }
 
     public JPanel getPanelRegistro() {
         return panelRegistro;

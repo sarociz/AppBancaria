@@ -5,6 +5,7 @@ import com.sun.istack.Nullable;
 import jakarta.persistence.*;
 
 import javax.xml.crypto.Data;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Random;
 
 @Entity
-public class CuentaBancaria {
+public class CuentaBancaria implements Serializable {
     @Id
     @Column(name = "numeroCuenta", nullable = false, length = 12)
     private String numeroCuenta;
@@ -105,5 +106,17 @@ public class CuentaBancaria {
 
     public void setTransferenciaList(List<Transferencia> transferenciaList) {
         this.transferenciaList = transferenciaList;
+    }
+
+    @Override
+    public String toString() {
+        return "CuentaBancaria{" +
+                "numeroCuenta='" + numeroCuenta + '\'' +
+                ", saldo=" + saldo +
+                ", tipoCuenta='" + tipoCuenta + '\'' +
+                ", fechaCreacion=" + fechaCreacion +
+                ", usuario=" + usuario +
+                ", transferenciaList=" + transferenciaList +
+                '}';
     }
 }

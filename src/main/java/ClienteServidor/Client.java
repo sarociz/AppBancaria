@@ -67,36 +67,20 @@ public class Client {
         }
     }
 
-    public Transferencia(String numeroCuenta, String cuentaDestino, Double cantidad, String nombre, String apellidos) {
+    public Transferencia transferenciaDirecta(String numeroCuenta, String cuentaDestino, Double cantidad, String nombre, String apellidos) {
         CuentaBancaria cuentaBancaria = cuentaBancariaDAO.find(numeroCuenta);
         String cuentaDEST = FuncionesCifrado.cifrar(cuentaDestino, clavePublicaServidor);
 
         return new Transferencia( cuentaDEST, cantidad, cuentaBancaria);
     }
 
-    public Transferencia transferenciaCuentaCuenta(String numeroCuenta, String cuentaDestino, Double cantidad) {
-        CuentaBancaria cuentaBancaria = cuentaBancariaDAO.find(numeroCuenta);
-        String cuentaDEST = FuncionesCifrado.cifrar(cuentaDestino, clavePublicaServidor);
 
-        return new Transferencia( cuentaDEST, cantidad, cuentaBancaria);
-    }
-    public void nuevaCuenta(String tipoCuenta) {
-
-        return new OperacionBancaria();
-    }
-
-    public void registrar( String nombre,String apellido, int edad, String correo, String nomusu,String contrasena) {
+    public static void registrar(String nombre, String apellido, int edad, String correo, String nomusu, String contrasena) {
         try {
-            KeyPair parDeClavesCliente = FuncionesCifrado.generarParDeClaves();
-            String contrasenaFirmada = FuncionesCifrado.firmar(contrasena, parDeClavesCliente.getPrivate());
-
-            //clavePrivadaCliente = parDeClavesCliente.getPrivate();
-            //clavePublicaCliente = parDeClavesCliente.getPublic();
-
             Usuario nuevoUsuario = new Usuario(nombre, apellido,  edad, correo,nomusu, contrasena);
 
             objectOutputStream.writeObject(nuevoUsuario);
-        } catch (IOException | NoSuchAlgorithmException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

@@ -62,7 +62,7 @@ public class LoginGUI {
                         cuentaBancariaList = (List<CuentaBancaria>) Client.objectInputStream.readObject();
 
                         if (userExists){
-                            AreaPersonal areaPersonal = new AreaPersonal(client, usuario, cuentaBancariaList);
+                            AreaPersonal areaPersonal = new AreaPersonal(keyPair, usuario, cuentaBancariaList);
                             JFrame frame = new JFrame("Área Personal");
                             frame.setContentPane(areaPersonal.getPanelAreaPersonal());
 
@@ -96,7 +96,12 @@ public class LoginGUI {
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
-                RegistroGUI registroGUI = new RegistroGUI();
+                RegistroGUI registroGUI = null;
+                try {
+                    registroGUI = new RegistroGUI(keyPair, usuarioDAO);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
 
                 JFrame frame = new JFrame("Registro");
                 frame.setContentPane(registroGUI.getPanelRegistro());

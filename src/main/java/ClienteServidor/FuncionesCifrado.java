@@ -5,6 +5,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
@@ -44,28 +45,17 @@ public class FuncionesCifrado {
         return signature.verify(firmaBytes);
     }
 
-    public static String codificarClavePublica(PublicKey clave) {
-        return Base64.getEncoder().encodeToString(clave.getEncoded());
-    }
-
-    public static PublicKey decodificarClavePublica(String claveCodificada) throws Exception {
-        byte[] claveBytes = Base64.getDecoder().decode(claveCodificada);
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(claveBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePublic(keySpec);
-    }
 
     public static String cifrar(String mensaje, PublicKey publicKey) {
-        // Leer mensaje y enviarlo cifrado
         byte[] mensajeCifrado = null;
         try {
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 
-            mensajeCifrado = cipher.doFinal(mensaje.getBytes());
+            mensajeCifrado = cipher.doFinal(mensaje.getBytes(StandardCharsets.UTF_8));
 
-            return Arrays.toString(mensajeCifrado);
-
+            // Codificar los bytes cifrados a Base64
+            return Base64.getEncoder().encodeToString(mensajeCifrado);
         } catch (IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
                  NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e);
@@ -76,20 +66,14 @@ public class FuncionesCifrado {
     public static String descifrar(String mensajeBase64, PrivateKey privateKey) {
         String mensajeDescifrado = null;
         try {
-            // Leer y descifrar mensajes del cliente
-            byte[] mensajeCifrado = mensajeBase64.getBytes();
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
-            mensajeDescifrado = new String(cipher.doFinal(mensajeCifrado));
-            System.out.println("Cliente dice: " + mensajeDescifrado);
 
-        } catch (NoSuchPaddingException | IllegalBlockSizeException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        } catch (BadPaddingException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidKeyException e) {
+            // Decodificar la cadena Base64 a bytes
+            byte[] mensajeCifrado = Base64.getDecoder().decode(mensajeBase64);
+            mensajeDescifrado = new String(cipher.doFinal(mensajeCifrado), StandardCharsets.UTF_8);
+        } catch (IllegalBlockSizeException | BadPaddingException | NoSuchPaddingException |
+                 NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
         return mensajeDescifrado;

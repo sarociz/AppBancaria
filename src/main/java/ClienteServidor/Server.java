@@ -1,8 +1,10 @@
 package ClienteServidor;
 
 import dao.CuentaBancariaImpl;
+import dao.TransferenciaDaoImpl;
 import dao.UsuarioDaoImpl;
 import models.CuentaBancaria;
+import models.Transferencia;
 import models.Usuario;
 
 import java.io.*;
@@ -58,6 +60,7 @@ public class Server {
         private final PrivateKey privateKey;
         public PublicKey publicKey;
         private CuentaBancariaImpl cuentaBancariaDao;
+        private TransferenciaDaoImpl transferenciaDao;
         private UsuarioDaoImpl usuarioDao;
         // Constants for choices
         private static final int LOGIN = 1;
@@ -98,6 +101,44 @@ public class Server {
                     int botonDOCUMENTO = -1;
                     RegistroLogin(userExists, botonDOCUMENTO);
                 }
+                try {
+
+                    while (true) {
+                        try {
+                            int choice = (int) objectInputStream.readObject();
+                            switch (choice) {
+                                case NUEVACUENTA:
+                                    Usuario usuario1 = (Usuario) objectInputStream.readObject();
+                                    String tipo = (String) objectInputStream.readObject();
+                                    crearCuenta(usuario, tipo);
+                                    break;
+                                case TRANFERENCIACC:
+                                    String numcuenta = (String) objectInputStream.readObject();
+                                    String cuentadestino = (String) objectInputStream.readObject();
+                                    tranferenciacc();
+                                    break;
+                                case TRANSFERENCIAD:
+                                    //verSaldo(usuario, operacion);
+                                    break;
+                            }
+
+                            // Recoger el tipo de operación y provesarla.
+//                                OperacionBancaria operacion = (OperacionBancaria) entrada.readObject();
+//                                procesarOperacion(usuarioActual, operacion);
+
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                } catch (IOException e) {
+                    try {
+                        objectInputStream.close();
+                        objectOutputStream.close();
+                    } catch (IOException ex) {
+                        e.printStackTrace();
+                    }
+                }
 
 
             } catch (ClassNotFoundException | IOException e) {
@@ -115,7 +156,7 @@ public class Server {
 
                     Usuario usuariologin = (Usuario) datosLogin;
                     Usuario datosCompletos = null;
-                    List<CuentaBancaria> cuentaBancariaList = null;
+                    List<CuentaBancaria> cuentaBancariaList = new ArrayList<>();
 
                     String nomusu = usuariologin.getUsuario();
                     String contrasena = usuariologin.getContrasena();
@@ -129,6 +170,7 @@ public class Server {
                         if (usuario.getContrasena() != null && usuario.getContrasena().equals(hashContrasena)) {
                             System.out.println("¡Credenciales correctas!");
                             cuentaBancariaList = cuentaBancariaDao.findByUsuarioId(usuario.getId());
+                            System.out.println(cuentaBancariaList);
                             userExists = true;
                         } else {
                             System.out.println("ERROR. Verifique sus credenciales.");
@@ -160,28 +202,35 @@ public class Server {
                     boolean documentoAceptado = (boolean) objectInputStream.readObject();
                     // Si lo ha aceptado
                     if (documentoAceptado) {
-                        //botón de aceptar o no el documento
-                        botonPulsado = (int) objectInputStream.readObject();
-                        if (botonPulsado == 1) {// Recibir datos del cliente para el registro
-                            Usuario nuevoUsuario = (Usuario) objectInputStream.readObject();
 
-                            // Realizar el registro del usuario
-                            //userExists = registrarUsuario(usuarioDao, usuario);
-                            hashContrasena = calcularHash(nuevoUsuario.getContrasena());
+                        // Recibir datos del cliente para el registro
+                        Usuario nuevoUsuario = (Usuario) objectInputStream.readObject();
 
-                            if (usuarioDao.existeUsuario(nuevoUsuario.getUsuario())) {
-                                System.out.println("Nombre de usuario en uso. Por favor, elija otro.");
-                                userExists = false;
-                            } else {
-                                usuario.setContrasena(hashContrasena);
-                                usuarioDao.create(usuario);
-                                System.out.println("Registro exitoso");
-                                userExists = true;
-                            }
+                        // Realizar el registro del usuario
+                        hashContrasena = calcularHash(nuevoUsuario.getContrasena());
 
-                            objectOutputStream.writeObject(userExists);
+                        if (usuarioDao.existeUsuario(nuevoUsuario.getUsuario())) {
+                            System.out.println("Nombre de usuario en uso. Por favor, elija otro.");
+                            userExists = false;
+                        } else {
+                            nuevoUsuario.setContrasena(hashContrasena);
+                            usuarioDao.create(nuevoUsuario);
+                            System.out.println("Registro exitoso");
+                            userExists = true;
+                        }
+                        List<CuentaBancaria> cuentaBancariaList2 = new ArrayList<>();
+
+                        objectOutputStream.writeObject(userExists);// enviar si existe o no
+                        objectOutputStream.writeObject(nuevoUsuario); //enviar todos los datos del usuario
+                        objectOutputStream.writeObject(cuentaBancariaList2); // enviar las cuentas bancarias del usuario
+
+                        if (userExists) {
+                            logeado = true;
+                        } else {
+                            System.out.println("Usuario no existe.");
 
                         }
+
                     } else {
                         System.out.println("Usuario no aceptó el documento.");
                         objectOutputStream.writeObject("No ha aceptado el documento. Volviendo al inicio...");
@@ -227,41 +276,104 @@ public class Server {
             }
         }
 
-        private void operaciones(boolean userExists, int botonPulsado) throws IOException, ClassNotFoundException {
-            int choice = (int) objectInputStream.readObject();
-            switch (choice) {
-                case NUEVACUENTA:
-                    crearCuenta(usuario, operacion);
-                    break;
-                case TRANFERENCIACC:
-                    procesarTransferencia(usuario, operacion);
-                    break;
-                case TRANSFERENCIAD:
-                    verSaldo(usuario, operacion);
-                    break;
-            }
-        }
 
         private void crearCuenta(Usuario usuario, String tipoCuenta) {
 
             CuentaBancaria nuevaCuenta = new CuentaBancaria(tipoCuenta, usuario);
             cuentaBancariaDao.create(nuevaCuenta);
 
-            System.out.println("Nueva cuenta creada para " + usuario.getDNI());
+            System.out.println("Nueva cuenta creada");
 
-            String nuevaCuentaCifrada = FirmadorDigital.cifrar(nuevaCuenta.getNumCuenta(), usuario.getClavePublica());
+            String nuevaCuentaCifrada = FuncionesCifrado.cifrar(nuevaCuenta.getNumeroCuenta(), clientPublicKey);
 
             try {
                 objectOutputStream.writeObject(nuevaCuentaCifrada);
-                objectOutputStream.writeObject(cuentaBancariaDao.countCuentasByDNI(usuarioActual.getDNI()));
+                objectOutputStream.writeObject("Cuenta creada");
 
-                List<CuentaBancaria> cuentaBancariaList = cuentaBancariaDao.findByUsuarioId(usuario.getId());
-
-                List<String> listaCifrada = new ArrayList<>();
-                listaCifrada = Collections.singletonList(cifrar(cuentaBancariaList.toString(), clientPublicKey));
-
-                objectOutputStream.writeObject(listaCifrada);
             } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void tranferenciacc(String numcuenta, String cuentaDestino, Double valor) {
+
+            String numcuentaDes = FuncionesCifrado.descifrar(numcuenta, keypair.getPrivate());
+            String cuentaDestinoDes = FuncionesCifrado.descifrar(cuentaDestino, keypair.getPrivate());
+
+            CuentaBancaria cuenta = cuentaBancariaDao.find(numcuentaDes);
+
+            Transferencia transferencia = new Transferencia(numcuentaDes, valor, cuenta);
+            if (cuenta.getSaldo() <= 0) {
+                System.out.println("Saldo insuficiente");
+                try {
+                    objectOutputStream.writeObject("Saldo insuficiente");
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }else {
+                try {
+                    transferenciaDao.create(transferencia);
+                    cuenta.setSaldo(valor + cuenta.getSaldo());
+                    cuentaBancariaDao.update(cuenta);
+                    System.out.println("Tranferencia correcta");
+                    objectOutputStream.writeObject("Tranferencia correcta");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+
+        }
+
+        private void transCuentaCuenta(Transferencia transferencia) {
+            try {
+                String primeraCuentaCifrada = operacion.getCuentaOrigen();
+                String segundaCuentaCifrada = operacion.getCuentaDestino();
+
+                String priCueDescifrada = FirmadorDigital.descifrar(primeraCuentaCifrada, parDeClavesServidor.getPrivate());
+                String segCueDescifrada = FirmadorDigital.descifrar(segundaCuentaCifrada, parDeClavesServidor.getPrivate());
+
+                // Obtener cuentas del usuario
+                CuentaBancaria cuentaOrigen = usuario.obtenerCuentaPorNumero(priCueDescifrada);
+                CuentaBancaria cuentaDestino = usuario.obtenerCuentaPorNumero(segCueDescifrada);
+
+                // Verificar saldo suficiente en la cuenta origen
+                if (cuentaOrigen.getSaldo() >= operacion.getMonto()) {
+                    salida.writeObject(true);
+
+                    // Cifrar el código generado aleatorioamente
+                    String codigoOriginal = String.valueOf(generadorCodigoAleatorio());
+                    String codigoCifrado = FirmadorDigital.cifrar(codigoOriginal, usuario.getClavePublica());
+
+                    // Envía el código cifrado al Usuario
+                    salida.writeObject(codigoCifrado);
+
+                    // Recibir la respuesta del Usuario
+                    String codigoDescifrado = (String) entrada.readObject();
+
+                    // Verifica si el código descifrado coincide con el original
+                    if (codigoOriginal.equals(codigoDescifrado)) {
+                        // Realizar la transferencia
+                        cuentaOrigen.retirar(operacion.getMonto());
+                        cuentaDestino.depositar(operacion.getMonto());
+
+                        cuentaBancariaDao.update(cuentaOrigen);
+                        cuentaBancariaDao.update(cuentaDestino);
+
+                        System.out.println("Código correcto. Transferencia aceptada.");
+                        salida.writeObject("Transferencia realizada con éxito.");
+                    } else {
+                        salida.writeObject(false);
+                        // Código incorrecto, rechaza la transferencia
+                        salida.writeObject("Código incorrecto. Transferencia rechazada.");
+                        System.out.println("Código incorrecto. Transferencia rechazada.");
+                    }
+                } else {
+                    salida.writeObject(false);
+                    salida.writeObject("Saldo insuficiente en la cuenta origen.");
+                }
+            } catch (IOException | ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         }

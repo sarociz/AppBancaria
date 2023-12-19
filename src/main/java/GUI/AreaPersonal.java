@@ -1,6 +1,7 @@
 package GUI;
 
 import ClienteServidor.Client;
+import ClienteServidor.FuncionesCifrado;
 import dao.CuentaBancariaImpl;
 import models.CuentaBancaria;
 import models.Usuario;
@@ -12,6 +13,9 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.security.KeyPair;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AreaPersonal {
@@ -28,7 +32,7 @@ public class AreaPersonal {
     private JLabel logo;
     private DefaultTableModel modelo = new DefaultTableModel();
 
-    public AreaPersonal(Client client, Usuario usuario, List<CuentaBancaria> cuentaBancariaList) {
+    public AreaPersonal(KeyPair keyPair, Usuario usuario, List<CuentaBancaria> cuentaBancariaList) {
         ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\transferencia-de-archivos.png");
         buttonTranferencia.setIcon(icon);
         ImageIcon icon1 = new ImageIcon(".\\src\\main\\java\\imagenes\\agregar.png");
@@ -39,19 +43,27 @@ public class AreaPersonal {
         logo.setIcon(icon3);
 
         panelnuevacuenta.setVisible(false);
+        verTablaGestiones(cuentaBancariaList);
 
         labelNombreApellidos.setText(usuario.getUsuario() + " " + usuario.getApellidos());
         buttonNuevaCuenta.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                panelnuevacuenta.setVisible(false);
+                try {
+                    panelnuevacuenta.setVisible(true);
+                    Client.objectOutputStream.writeObject(4);
+
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
 
             }
         });
         buttonTranferencia.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MenuTransferencias menuTransferencias = new MenuTransferencias();
+
+                MenuTransferencias menuTransferencias = new MenuTransferencias(keyPair, usuario, cuentaBancariaList);
 
                 JFrame frame = new JFrame("Transferencias");
                 frame.setContentPane(menuTransferencias.getPanelMenuTransferencias());
@@ -65,11 +77,36 @@ public class AreaPersonal {
         buttonAceptar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String tipoCuenta = CBTipoCuenta.getSelectedItem().toString();
+                try {
+                    Client.objectOutputStream.writeObject(usuario);
+                    Client.objectOutputStream.writeObject(tipoCuenta);
 
+                    String CuentaCifrada = (String) Client.objectInputStream.readObject();
+                    String cuentaDescifrada = FuncionesCifrado.descifrar(CuentaCifrada, keyPair.getPrivate());
+
+                    CuentaBancariaImpl cuentaBancariaDao = new CuentaBancariaImpl();
+                    CuentaBancaria cuentaBancaria = cuentaBancariaDao.find(cuentaDescifrada);
+                    cuentaBancariaList.add(cuentaBancaria);
+                    actualizarTabla(cuentaBancariaDao, cuentaBancariaList, usuario);
+
+                    String mensaje = (String) Client.objectInputStream.readObject();
+                    JOptionPane.showMessageDialog(null, mensaje);
+                    panelnuevacuenta.setVisible(false);
+                    limpiarCampos();
+
+
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                } catch (ClassNotFoundException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
 
+
     }
+
     public void limpiarCampos() {
         CBTipoCuenta.setSelectedItem(0);
 

@@ -3,8 +3,10 @@ package models;
 import com.sun.istack.NotNull;
 import jakarta.persistence.*;
 
+import java.io.Serializable;
+
 @Entity
-public class Transferencia {
+public class Transferencia implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
