@@ -4,6 +4,8 @@ import idao.IUsuarioDAO;
 import jakarta.persistence.TypedQuery;
 import models.Usuario;
 
+import java.util.List;
+
 public class UsuarioDaoImpl extends Dao<Usuario, Integer> implements IUsuarioDAO{
     @Override
     public Usuario find(Integer id) {
@@ -40,4 +42,13 @@ public class UsuarioDaoImpl extends Dao<Usuario, Integer> implements IUsuarioDAO
         Usuario usu = query.getSingleResult();
         return usu;
     }
+
+    @Override
+    public List<Usuario> listaUsuarios() {
+        String jpql = "SELECT p FROM Usuario p";
+        TypedQuery<Usuario> query = em.createQuery(jpql, Usuario.class);
+
+        return query.getResultList();
+    }
+
 }

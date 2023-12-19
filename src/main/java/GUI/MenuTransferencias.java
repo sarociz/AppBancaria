@@ -9,7 +9,6 @@ public class MenuTransferencias {
     private JButton buttonCuentaCuenta;
     private JButton transferenciaDirectaButton;
     private JButton transferenciaInterbancariaButton;
-    private JButton button1;
     private JScrollPane scrollTransferencias;
     private JPanel panelTransferencias;
 
@@ -28,6 +27,9 @@ public class MenuTransferencias {
     private JTextField TFNombreApell;
     private JButton aceptarButton;
     private JButton buttonVolver;
+    private JSpinner spinnerValorDir;
+    private JButton volverButton;
+    private JButton aceptarButton1;
     //--------------------
 
     public MenuTransferencias() {

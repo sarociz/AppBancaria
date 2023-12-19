@@ -1,14 +1,18 @@
 package GUI;
 
+import ClienteServidor.Client;
 import dao.UsuarioDaoImpl;
+import models.CuentaBancaria;
 import models.Usuario;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.security.KeyPair;
+import java.util.List;
 
-import static ClienteServidor.Cliente.conectarCliente;
+
 import static Operaciones.LoginyRegistro.iniciarSesion;
 
 public class LoginGUI {
@@ -26,30 +30,54 @@ public class LoginGUI {
     public JPanel getPanelLogin() {
         return panelLogin;
     }
+    private final Client client;
+    List<CuentaBancaria> cuentaBancariaList;
 
-    public LoginGUI(UsuarioDaoImpl usuarioDAO) {
+    public LoginGUI(UsuarioDaoImpl usuarioDAO, KeyPair keyPair) {
+
+        client = new Client();
+        //client.setOutputStream(obtenerObjectOutputStreamDelServidor());
+
         ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\logo (2).png");
         labelLogo.setIcon(icon);
         aceptarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 usuario = new Usuario();
-                usuario.setUsuario(TFUsuario.getText());
-                usuario.setContrasena(new String(PFContrasena.getPassword()));
+                String nomusu = TFUsuario.getText();
+                String contrasena = new String(PFContrasena.getPassword());
+                boolean userExists = false;
+
                 if (TFUsuario.getText().isEmpty() || new String(PFContrasena.getPassword()).isEmpty()){
                     JOptionPane.showMessageDialog(null, "Faltan datos");
                     return;
                 }else{
-                    iniciarSesion(usuarioDAO, TFUsuario.getText(), new String(PFContrasena.getPassword()));
-                    conectarCliente(TFUsuario.getText());
-                    AreaPersonal areaPersonal = new AreaPersonal();
-                    JFrame frame = new JFrame("Área Personal");
-                    frame.setContentPane(areaPersonal.getPanelAreaPersonal());
+                    try {
+                        //se envia al servidor que se quiere iniciar sesión
+                        Client.objectOutputStream.writeObject(1);
+                        client.iniciarSesion(nomusu, contrasena);
 
-                    // Realiza el ajuste y muestra la ventana
-                    frame.pack();
-                    frame.setLocationRelativeTo(null);
-                    frame.setVisible(true);
+                        userExists = (boolean) Client.objectInputStream.readObject();//recibir si existe o no
+                        usuario = (Usuario) Client.objectInputStream.readObject();
+                        cuentaBancariaList = (List<CuentaBancaria>) Client.objectInputStream.readObject();
+
+                        if (userExists){
+                            AreaPersonal areaPersonal = new AreaPersonal(client, usuario, cuentaBancariaList);
+                            JFrame frame = new JFrame("Área Personal");
+                            frame.setContentPane(areaPersonal.getPanelAreaPersonal());
+
+                            // Realiza el ajuste y muestra la ventana
+                            frame.pack();
+                            frame.setLocationRelativeTo(null);
+                            frame.setVisible(true);
+                        }else {
+                            JOptionPane.showMessageDialog(null, "Inicio de sesión fallido", "Iniciar Sesión", JOptionPane.ERROR_MESSAGE);
+                        }
+
+                    } catch (IOException | ClassNotFoundException ex) {
+                        throw new RuntimeException(ex);
+                    }
+
                 }
 
             }
@@ -63,6 +91,11 @@ public class LoginGUI {
         registrarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                try {
+                    Client.objectOutputStream.writeObject(2);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
                 RegistroGUI registroGUI = new RegistroGUI();
 
                 JFrame frame = new JFrame("Registro");

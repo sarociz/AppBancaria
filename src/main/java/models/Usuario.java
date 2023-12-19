@@ -4,11 +4,12 @@ package models;
 import com.sun.istack.NotNull;
 import jakarta.persistence.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class Usuario {
+public class Usuario implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -25,6 +26,10 @@ public class Usuario {
     @NotNull
     private Integer edad;
 
+    @Column(length = 30)
+    @NotNull
+    private String correo;
+
     @Column(length = 15)
     @NotNull
     private String usuario;
@@ -38,10 +43,16 @@ public class Usuario {
     public Usuario() {
     }
 
-    public Usuario(String nombre, String apellidos, Integer edad, String usuario, String contrasena) {
+    public Usuario(String usuario, String contrasena) {
+        this.usuario = usuario;
+        this.contrasena = contrasena;
+    }
+
+    public Usuario(String nombre, String apellidos, Integer edad, String correo, String usuario, String contrasena) {
         this.nombre = nombre;
         this.apellidos = apellidos;
         this.edad = edad;
+        this.correo = correo;
         this.usuario = usuario;
         this.contrasena = contrasena;
     }
@@ -76,6 +87,14 @@ public class Usuario {
 
     public void setEdad(Integer edad) {
         this.edad = edad;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public String getUsuario() {

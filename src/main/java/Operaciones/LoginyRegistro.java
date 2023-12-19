@@ -11,7 +11,7 @@ import java.util.Scanner;
 public class LoginyRegistro {
     private static Usuario usuario;
 
-    private static String calcularHash(String contrasena) {
+    public static String calcularHash(String contrasena) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = md.digest(contrasena.getBytes());

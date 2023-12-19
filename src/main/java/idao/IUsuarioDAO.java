@@ -2,6 +2,8 @@ package idao;
 
 import models.Usuario;
 
+import java.util.List;
+
 public interface IUsuarioDAO {
 
     boolean existeUsuario(String usuario);
@@ -9,4 +11,6 @@ public interface IUsuarioDAO {
     Usuario findByContrasena(String contrasena);
 
     Usuario findByUsuario(String usuario);
+
+    List<Usuario> listaUsuarios();
 }

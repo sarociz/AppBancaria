@@ -83,7 +83,7 @@ public class pruba {
             System.out.println("Nombre de usuario en uso. Por favor, elija otro.");
             return;
         }
-        usuario = new Usuario("aroa", "rodriguez", 21, identificador, hashContrasena);
+        usuario = new Usuario("aroa", "rodriguez", 21, "a@gmail.com", identificador, hashContrasena);
         usuarioDao.create(usuario);
         System.out.println("¡Registro exitoso!");
 
