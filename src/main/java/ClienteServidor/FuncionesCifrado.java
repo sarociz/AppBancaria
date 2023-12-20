@@ -7,20 +7,17 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 
+/**
+ * Clase con funciones que se encargan del cifrado, descifrado, firma y comprobación de firma
+ */
 public class FuncionesCifrado {
 
-    public static KeyPair generarParDeClaves() throws NoSuchAlgorithmException {
-        // Generar par de claves para cifrado asimétrico (RSA)
+    public static KeyPair clavesAsimetricas() throws NoSuchAlgorithmException {
+        // Generar claves para cifrado asimétrico
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
-//        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-//        PublicKey publicKey = keyPair.getPublic();
-//        PrivateKey privateKey = keyPair.getPrivate();
         return keyPairGenerator.generateKeyPair();
     }
 

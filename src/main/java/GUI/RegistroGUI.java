@@ -1,6 +1,7 @@
 package GUI;
 
 import ClienteServidor.Client;
+import ClienteServidor.ExpresionesRegulares;
 import ClienteServidor.FuncionesCifrado;
 import dao.UsuarioDaoImpl;
 import models.CuentaBancaria;
@@ -12,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.List;
 
 public class RegistroGUI {
@@ -28,8 +30,8 @@ public class RegistroGUI {
     private boolean aceptarDocumento = false;
     List<CuentaBancaria> cuentaBancariaList;
 
-    public RegistroGUI(KeyPair keyPair, UsuarioDaoImpl usuarioDao) throws Exception {
-        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\logo (2).png");
+    public RegistroGUI(KeyPair keyPair, UsuarioDaoImpl usuarioDao, PublicKey claveServidor) throws Exception {
+        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\logov2.png");
         icono.setIcon(icon);
         recibirDocumento();
         aceptarButton.addActionListener(new ActionListener() {
@@ -42,13 +44,21 @@ public class RegistroGUI {
                 int edad = Integer.parseInt(TFEdad.getText());
                 String correo = TFCorreo.getText();
 
-                if (nomusuario.isEmpty() || contrasena.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || edad == 0) {
-                    JOptionPane.showMessageDialog(null, "Faltan datos", "Registro", JOptionPane.ERROR_MESSAGE);
-                } else {
                     try {
                         if (TFApellidos.getText().isEmpty() || TFApellidos.getText().isEmpty() || TFEdad.getText().isEmpty() || TFCorreo.getText().isEmpty() || TFUsuario.getText().isEmpty()) {
                             JOptionPane.showMessageDialog(null, "Campos vacios", "Registro", JOptionPane.ERROR_MESSAGE);
-                        } else {
+
+                        }else if (!ExpresionesRegulares.comprobarCorreo(correo)) {
+                            JOptionPane.showMessageDialog(null, "Correo incorrecto. " +
+                                    "Tiene que tener esta estructura: xxxx@xxx.com", "Error", JOptionPane.ERROR_MESSAGE);
+                        }else if (!ExpresionesRegulares.comprobarContrasena(contrasena)) {
+                            JOptionPane.showMessageDialog(null, "Contraseña incorrecta. \n" +
+                                    "-La contraseña debe contener al menos un dígito.\n" +
+                                    "-La contraseña debe contener al menos una letra minúscula.\n" +
+                                    "-La contraseña debe contener al menos una letra mayúscula.\n" +
+                                    "-La contraseña no debe contener espacios en blanco.\n" +
+                                    "-La contraseña debe tener al menos 8 caracteres de longitud.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }else {
                             Client.registrar(nomusuario, apellido, edad, correo, nombre, apellido);
 
                             boolean usuarioExiste = (boolean) Client.objectInputStream.readObject();
@@ -56,7 +66,7 @@ public class RegistroGUI {
                             cuentaBancariaList = (List<CuentaBancaria>) Client.objectInputStream.readObject();
 
                             if (usuarioExiste) {
-                                AreaPersonal areaPersonal = new AreaPersonal(keyPair ,usuario, cuentaBancariaList);
+                                AreaPersonal areaPersonal = new AreaPersonal(keyPair, usuario, cuentaBancariaList, claveServidor);
                                 JFrame frame = new JFrame("Área Personal");
                                 frame.setContentPane(areaPersonal.getPanelAreaPersonal());
 
@@ -74,10 +84,13 @@ public class RegistroGUI {
                     } catch (ClassNotFoundException ex) {
                         throw new RuntimeException(ex);
                     }
-                }
-                limpiarComponentes();
+
+
+
 
             }
+
+
         });
     }
 

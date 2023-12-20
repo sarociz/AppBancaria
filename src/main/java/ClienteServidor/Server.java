@@ -11,17 +11,19 @@ import java.io.*;
 import java.net.*;
 import java.security.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static ClienteServidor.FuncionesCifrado.*;
 
+/**
+ * Clase servidor donde se ejecuta el servidor y se crea un thread para manejar al cliente
+ */
 public class Server {
     private static final KeyPair keypair;
 
     static {
         try {
-            keypair = generarParDeClaves();
+            keypair = clavesAsimetricas();
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -53,14 +55,18 @@ public class Server {
         }
     }
 
-    private static class ClienteHandler implements Runnable {
+    /**
+     * La clase clientehandler se encarga de la comunicación entre cliente y servidor, recibe los mensajes del cliente y
+     * responde de forma adecuada.
+     */
+    public static class ClienteHandler implements Runnable {
         private final Socket socket;
         private ObjectOutputStream objectOutputStream;
         private final ObjectInputStream objectInputStream;
         private final PrivateKey privateKey;
         public PublicKey publicKey;
         private CuentaBancariaImpl cuentaBancariaDao;
-        private TransferenciaDaoImpl transferenciaDao;
+        private TransferenciaDaoImpl transferenciaDao = new TransferenciaDaoImpl();
         private UsuarioDaoImpl usuarioDao;
         // Constants for choices
         private static final int LOGIN = 1;
@@ -76,7 +82,6 @@ public class Server {
         public ClienteHandler(Socket socket, PrivateKey privateKey, PublicKey publicKey, CuentaBancariaImpl cuentaBancariaDao, UsuarioDaoImpl usuarioDao) throws IOException {
             this.socket = socket;
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-            ;
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
             this.privateKey = privateKey;
             this.publicKey = publicKey;
@@ -101,42 +106,52 @@ public class Server {
                     int botonDOCUMENTO = -1;
                     RegistroLogin(userExists, botonDOCUMENTO);
                 }
-                try {
+                boolean menu = (boolean) objectInputStream.readObject();
+                if (menu) {
+                    try {
+                        while (true) {
+                            try {
+                                int choice = (int) objectInputStream.readObject();
+                                switch (choice) {
+                                    case NUEVACUENTA:
+                                        Usuario usuario1 = (Usuario) objectInputStream.readObject();
+                                        String tipo = (String) objectInputStream.readObject();
+                                        crearCuenta(usuario, tipo);
+                                        break;
+                                    case TRANFERENCIACC:
+                                        String numcuenta = (String) objectInputStream.readObject();
+                                        String cuentadestino = (String) objectInputStream.readObject();
+                                        Double valor = (Double) objectInputStream.readObject();
+                                        tranferenciacc(numcuenta, cuentadestino, valor);
+                                        break;
+                                    case TRANSFERENCIAD:
+                                        String numcuenta2 = (String) objectInputStream.readObject();
+                                        String cuentadestino2 = (String) objectInputStream.readObject();
+                                        Double valor2 = (Double) objectInputStream.readObject();
+                                        String nombre = (String) objectInputStream.readObject();
+                                        String apellidos = (String) objectInputStream.readObject();
+                                        tranferenciaDir(numcuenta2, cuentadestino2, valor2, nombre, apellidos);
+                                        break;
+                                    case EXIT:
+                                        System.out.println("saliendo");
+                                        break;
+                                    default:
+                                        System.out.println("Opción no válida");
+                                }
 
-                    while (true) {
-                        try {
-                            int choice = (int) objectInputStream.readObject();
-                            switch (choice) {
-                                case NUEVACUENTA:
-                                    Usuario usuario1 = (Usuario) objectInputStream.readObject();
-                                    String tipo = (String) objectInputStream.readObject();
-                                    crearCuenta(usuario, tipo);
-                                    break;
-                                case TRANFERENCIACC:
-                                    String numcuenta = (String) objectInputStream.readObject();
-                                    String cuentadestino = (String) objectInputStream.readObject();
-                                    tranferenciacc();
-                                    break;
-                                case TRANSFERENCIAD:
-                                    //verSaldo(usuario, operacion);
-                                    break;
+
+                            } catch (ClassNotFoundException e) {
+                                e.printStackTrace();
                             }
+                        }
 
-                            // Recoger el tipo de operación y provesarla.
-//                                OperacionBancaria operacion = (OperacionBancaria) entrada.readObject();
-//                                procesarOperacion(usuarioActual, operacion);
-
-                        } catch (ClassNotFoundException e) {
+                    } catch (IOException e) {
+                        try {
+                            objectInputStream.close();
+                            objectOutputStream.close();
+                        } catch (IOException ex) {
                             e.printStackTrace();
                         }
-                    }
-
-                } catch (IOException e) {
-                    try {
-                        objectInputStream.close();
-                        objectOutputStream.close();
-                    } catch (IOException ex) {
-                        e.printStackTrace();
                     }
                 }
 
@@ -144,16 +159,28 @@ public class Server {
             } catch (ClassNotFoundException | IOException e) {
                 throw new RuntimeException(e);
             } finally {
-                cerrarConexiones();
+                try {
+                    objectInputStream.close();
+                    objectOutputStream.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
-        private void RegistroLogin(boolean userExists, int botonPulsado) throws IOException, ClassNotFoundException {
+        /**
+         * En esta funcion se encarga de verificar el login del usuario(si existe, comprobar contraseña, etc..)
+         * y del registro de los usuarios
+         *
+         * @param userExists se encarga de comunicar si el usuario existe en la base de datos o no
+         * @throws IOException            controla las excepciones al leer los mensajes del cliente
+         * @throws ClassNotFoundException controla las excepciones al leer los mensajes del cliente
+         */
+        private void RegistroLogin(boolean userExists, int botonDocumento) throws IOException, ClassNotFoundException {
             int choice = (int) objectInputStream.readObject();
             switch (choice) {
                 case LOGIN:
                     Object datosLogin = objectInputStream.readObject();
-
                     Usuario usuariologin = (Usuario) datosLogin;
                     Usuario datosCompletos = null;
                     List<CuentaBancaria> cuentaBancariaList = new ArrayList<>();
@@ -246,18 +273,12 @@ public class Server {
             }
         }
 
-
-        private void cerrarConexiones() {
-
-            try {
-                objectInputStream.close();
-                objectOutputStream.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-        }
-
+        /**
+         * función para cifrar la contraseña
+         *
+         * @param contrasena contraseña sin seguridad
+         * @return devuelve la contraseña codificada para que sea segura
+         */
         public static String calcularHash(String contrasena) {
             try {
                 MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -276,7 +297,12 @@ public class Server {
             }
         }
 
-
+        /**
+         * función que se encarga de la creación de nuevas cuentas
+         *
+         * @param usuario    el usuario al que se quiere crear la contraseña         *
+         * @param tipoCuenta el tipo de cuenta que se quiere crear
+         */
         private void crearCuenta(Usuario usuario, String tipoCuenta) {
 
             CuentaBancaria nuevaCuenta = new CuentaBancaria(tipoCuenta, usuario);
@@ -295,90 +321,92 @@ public class Server {
             }
         }
 
-        private void tranferenciacc(String numcuenta, String cuentaDestino, Double valor) {
+        /**
+         * funcíon para la creación de tranferencias entre cuentas de usuario
+         *
+         * @param numcuenta     numero de cuenta de la que retirar dinero
+         * @param cuentaDestino numero de cuenta a la que añadir dinero
+         * @param valor         cantidad de dinero
+         * @throws IOException
+         */
+        private void tranferenciacc(String numcuenta, String cuentaDestino, Double valor) throws IOException {
 
             String numcuentaDes = FuncionesCifrado.descifrar(numcuenta, keypair.getPrivate());
             String cuentaDestinoDes = FuncionesCifrado.descifrar(cuentaDestino, keypair.getPrivate());
 
-            CuentaBancaria cuenta = cuentaBancariaDao.find(numcuentaDes);
+            CuentaBancaria cuentaOrigen = cuentaBancariaDao.find(numcuentaDes);
+            CuentaBancaria cuentaDestinos = cuentaBancariaDao.find(cuentaDestinoDes);
 
-            Transferencia transferencia = new Transferencia(numcuentaDes, valor, cuenta);
-            if (cuenta.getSaldo() <= 0) {
-                System.out.println("Saldo insuficiente");
-                try {
-                    objectOutputStream.writeObject("Saldo insuficiente");
+            Transferencia transferencia = new Transferencia(cuentaDestinoDes, valor, cuentaOrigen);
+            if (cuentaBancariaDao.existeCuentaBancaria(numcuentaDes) && cuentaBancariaDao.existeCuentaBancaria(cuentaDestinoDes)) {
 
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }else {
-                try {
-                    transferenciaDao.create(transferencia);
-                    cuenta.setSaldo(valor + cuenta.getSaldo());
-                    cuentaBancariaDao.update(cuenta);
-                    System.out.println("Tranferencia correcta");
-                    objectOutputStream.writeObject("Tranferencia correcta");
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                if (cuentaOrigen.getSaldo() <= 0) {
+                    System.out.println("Saldo insuficiente");
 
-            }
-
-        }
-
-        private void transCuentaCuenta(Transferencia transferencia) {
-            try {
-                String primeraCuentaCifrada = operacion.getCuentaOrigen();
-                String segundaCuentaCifrada = operacion.getCuentaDestino();
-
-                String priCueDescifrada = FirmadorDigital.descifrar(primeraCuentaCifrada, parDeClavesServidor.getPrivate());
-                String segCueDescifrada = FirmadorDigital.descifrar(segundaCuentaCifrada, parDeClavesServidor.getPrivate());
-
-                // Obtener cuentas del usuario
-                CuentaBancaria cuentaOrigen = usuario.obtenerCuentaPorNumero(priCueDescifrada);
-                CuentaBancaria cuentaDestino = usuario.obtenerCuentaPorNumero(segCueDescifrada);
-
-                // Verificar saldo suficiente en la cuenta origen
-                if (cuentaOrigen.getSaldo() >= operacion.getMonto()) {
-                    salida.writeObject(true);
-
-                    // Cifrar el código generado aleatorioamente
-                    String codigoOriginal = String.valueOf(generadorCodigoAleatorio());
-                    String codigoCifrado = FirmadorDigital.cifrar(codigoOriginal, usuario.getClavePublica());
-
-                    // Envía el código cifrado al Usuario
-                    salida.writeObject(codigoCifrado);
-
-                    // Recibir la respuesta del Usuario
-                    String codigoDescifrado = (String) entrada.readObject();
-
-                    // Verifica si el código descifrado coincide con el original
-                    if (codigoOriginal.equals(codigoDescifrado)) {
-                        // Realizar la transferencia
-                        cuentaOrigen.retirar(operacion.getMonto());
-                        cuentaDestino.depositar(operacion.getMonto());
-
-                        cuentaBancariaDao.update(cuentaOrigen);
-                        cuentaBancariaDao.update(cuentaDestino);
-
-                        System.out.println("Código correcto. Transferencia aceptada.");
-                        salida.writeObject("Transferencia realizada con éxito.");
-                    } else {
-                        salida.writeObject(false);
-                        // Código incorrecto, rechaza la transferencia
-                        salida.writeObject("Código incorrecto. Transferencia rechazada.");
-                        System.out.println("Código incorrecto. Transferencia rechazada.");
-                    }
                 } else {
-                    salida.writeObject(false);
-                    salida.writeObject("Saldo insuficiente en la cuenta origen.");
+                    try {
+                        transferenciaDao.create(transferencia);
+                        cuentaOrigen.setSaldo(cuentaOrigen.getSaldo() - valor);
+                        cuentaDestinos.setSaldo(valor + cuentaDestinos.getSaldo());
+                        cuentaBancariaDao.update(cuentaOrigen);
+                        cuentaBancariaDao.update(cuentaDestinos);
+                        System.out.println("Tranferencia correcta");
+                        objectOutputStream.writeObject("Tranferencia correcta");
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
                 }
-            } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
+            } else {
+                System.out.println("Una de las cuentas no existe");
             }
+
         }
 
+        /**
+         * funcion para la creación de transferencias entre cuenta del usuario y cuenta ajena pero del mismo banco
+         * @param numcuenta cuenta de origen del dinero
+         * @param cuentaDestino cuenta de destino del dinero
+         * @param valor cantidad de dinero
+         * @param nombre nombre del titular de la cuenta destino
+         * @param apellidos apellidos del titular de la cuenta destino
+         * @throws IOException
+         */
+        private void tranferenciaDir(String numcuenta, String cuentaDestino, Double valor, String nombre, String apellidos) throws IOException {
 
+            String numcuentaDes = FuncionesCifrado.descifrar(numcuenta, keypair.getPrivate());
+            String cuentaDestinoDes = FuncionesCifrado.descifrar(cuentaDestino, keypair.getPrivate());
+
+            CuentaBancaria cuentaOrigen = cuentaBancariaDao.find(numcuentaDes);
+
+            Transferencia transferencia = new Transferencia(cuentaDestinoDes, valor, cuentaOrigen);
+            if (cuentaBancariaDao.existeCuentaBancaria(numcuentaDes)) {
+                if (cuentaOrigen.getSaldo() <= 0) {
+                    System.out.println("Saldo insuficiente");
+
+                } else {
+
+                    try {
+                        transferenciaDao.create(transferencia);
+                        cuentaOrigen.setSaldo(cuentaOrigen.getSaldo() - valor);
+                        cuentaBancariaDao.update(cuentaOrigen);
+                        System.out.println("Tranferencia correcta");
+                        objectOutputStream.writeObject("Tranferencia correcta");
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                }
+            } else {
+                System.out.println("La cuenta no existe");
+            }
+
+        }
+
+        /**
+         * Document que se envia al usuario antes de registrarse
+         * @throws IOException
+         */
         private void DocumentoCondiciones() throws IOException {
             // documento para la firma digital
             String documento = "¡Bienvenido a PocketBank!\n" +

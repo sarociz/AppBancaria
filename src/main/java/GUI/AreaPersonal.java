@@ -15,14 +15,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.security.KeyPair;
-import java.util.ArrayList;
+import java.security.PublicKey;
 import java.util.List;
 
 public class AreaPersonal {
     private JPanel panelAreaPersonal;
     private JTable tablaCuentas;
-    private JButton buttonNuevaCuenta;
-    private JButton buttonTranferencia;
+    private JButton buttonMenuOp;
     private JLabel iconoPersona;
     private JComboBox CBTipoCuenta;
     private JButton buttonAceptar;
@@ -32,38 +31,34 @@ public class AreaPersonal {
     private JLabel logo;
     private DefaultTableModel modelo = new DefaultTableModel();
 
-    public AreaPersonal(KeyPair keyPair, Usuario usuario, List<CuentaBancaria> cuentaBancariaList) {
-        ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\transferencia-de-archivos.png");
-        buttonTranferencia.setIcon(icon);
-        ImageIcon icon1 = new ImageIcon(".\\src\\main\\java\\imagenes\\agregar.png");
-        buttonNuevaCuenta.setIcon(icon1);
+    /**
+     * ventana donde se muestran las cuentas bancarias del usuario
+     *
+     * @param keyPair claves del usuario
+     * @param usuario usuario actual logeado
+     * @param cuentaBancariaList lista de cuentas bancarias del usuario
+     * @param claveServidor clave pública del servidor
+     */
+    public AreaPersonal(KeyPair keyPair, Usuario usuario, List<CuentaBancaria> cuentaBancariaList, PublicKey claveServidor) {
         ImageIcon icon2 = new ImageIcon(".\\src\\main\\java\\imagenes\\avatar1.png");
         iconoPersona.setIcon(icon2);
         ImageIcon icon3 = new ImageIcon(".\\src\\main\\java\\imagenes\\logov2.png");
         logo.setIcon(icon3);
 
-        panelnuevacuenta.setVisible(false);
         verTablaGestiones(cuentaBancariaList);
 
         labelNombreApellidos.setText(usuario.getUsuario() + " " + usuario.getApellidos());
-        buttonNuevaCuenta.addActionListener(new ActionListener() {
+
+        buttonMenuOp.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    panelnuevacuenta.setVisible(true);
-                    Client.objectOutputStream.writeObject(4);
-
+                    Client.objectOutputStream.writeObject(true);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
 
-            }
-        });
-        buttonTranferencia.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
-                MenuTransferencias menuTransferencias = new MenuTransferencias(keyPair, usuario, cuentaBancariaList);
+                MenuOperaciones menuTransferencias = new MenuOperaciones(keyPair, usuario, cuentaBancariaList, claveServidor);
 
                 JFrame frame = new JFrame("Transferencias");
                 frame.setContentPane(menuTransferencias.getPanelMenuTransferencias());
@@ -74,47 +69,9 @@ public class AreaPersonal {
                 frame.setVisible(true);
             }
         });
-        buttonAceptar.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String tipoCuenta = CBTipoCuenta.getSelectedItem().toString();
-                try {
-                    Client.objectOutputStream.writeObject(usuario);
-                    Client.objectOutputStream.writeObject(tipoCuenta);
-
-                    String CuentaCifrada = (String) Client.objectInputStream.readObject();
-                    String cuentaDescifrada = FuncionesCifrado.descifrar(CuentaCifrada, keyPair.getPrivate());
-
-                    CuentaBancariaImpl cuentaBancariaDao = new CuentaBancariaImpl();
-                    CuentaBancaria cuentaBancaria = cuentaBancariaDao.find(cuentaDescifrada);
-                    cuentaBancariaList.add(cuentaBancaria);
-                    actualizarTabla(cuentaBancariaDao, cuentaBancariaList, usuario);
-
-                    String mensaje = (String) Client.objectInputStream.readObject();
-                    JOptionPane.showMessageDialog(null, mensaje);
-                    panelnuevacuenta.setVisible(false);
-                    limpiarCampos();
 
 
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                } catch (ClassNotFoundException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        });
 
-
-    }
-
-    public void limpiarCampos() {
-        CBTipoCuenta.setSelectedItem(0);
-
-    }
-
-    public void actualizarTabla(CuentaBancariaImpl cuentaBancariaDao, List<CuentaBancaria> cuentaBancariaList, Usuario usuario) {
-        cuentaBancariaList = cuentaBancariaDao.findByUsuarioId(usuario.getId());
-        verTablaGestiones(cuentaBancariaList);
     }
 
     public void verTablaGestiones(List<CuentaBancaria> cuentaBancariaList) {

@@ -12,7 +12,9 @@ import java.net.*;
 import java.security.*;
 import javax.swing.*;
 
-
+/**
+ * Clase cliente que se conecta con el servidor y le va enviando peticiones y recibiendo respuestas.
+ */
 public class Client {
     static UsuarioDaoImpl usuarioDao = new UsuarioDaoImpl();
     private static int puerto = 12345;
@@ -31,7 +33,7 @@ public class Client {
         socket = new Socket(address, puerto);
         objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         objectInputStream = new ObjectInputStream(socket.getInputStream());
-        keyPair = FuncionesCifrado.generarParDeClaves();
+        keyPair = FuncionesCifrado.clavesAsimetricas();
 
         try {
             // Enviar clave pública al servidor
@@ -44,13 +46,12 @@ public class Client {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //        // Crea una instancia de JFrame
+        // Mostrar ventana de login
         JFrame frame = new JFrame("Login");
-        //JFrame frame2 = new JFrame("Transferencias");
         ImageIcon icon = new ImageIcon(".\\src\\main\\java\\imagenes\\banco.png");
         frame.setIconImage(icon.getImage());
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        LoginGUI login = new LoginGUI(usuarioDao, keyPair);
+        LoginGUI login = new LoginGUI(usuarioDao, keyPair, clavePublicaServidor);
         frame.setContentPane(login.getPanelLogin());
 
         // Realiza el ajuste y muestra la ventana
@@ -66,14 +67,6 @@ public class Client {
             e.printStackTrace();
         }
     }
-
-    public Transferencia transferenciaDirecta(String numeroCuenta, String cuentaDestino, Double cantidad, String nombre, String apellidos) {
-        CuentaBancaria cuentaBancaria = cuentaBancariaDAO.find(numeroCuenta);
-        String cuentaDEST = FuncionesCifrado.cifrar(cuentaDestino, clavePublicaServidor);
-
-        return new Transferencia( cuentaDEST, cantidad, cuentaBancaria);
-    }
-
 
     public static void registrar(String nombre, String apellido, int edad, String correo, String nomusu, String contrasena) {
         try {

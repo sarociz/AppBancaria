@@ -10,10 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.List;
-
-
-import static Operaciones.LoginyRegistro.iniciarSesion;
 
 public class LoginGUI {
     private JPanel panelLogin;
@@ -33,7 +31,7 @@ public class LoginGUI {
     private final Client client;
     List<CuentaBancaria> cuentaBancariaList;
 
-    public LoginGUI(UsuarioDaoImpl usuarioDAO, KeyPair keyPair) {
+    public LoginGUI(UsuarioDaoImpl usuarioDAO, KeyPair keyPair, PublicKey claveServidor) {
 
         client = new Client();
         //client.setOutputStream(obtenerObjectOutputStreamDelServidor());
@@ -62,7 +60,7 @@ public class LoginGUI {
                         cuentaBancariaList = (List<CuentaBancaria>) Client.objectInputStream.readObject();
 
                         if (userExists){
-                            AreaPersonal areaPersonal = new AreaPersonal(keyPair, usuario, cuentaBancariaList);
+                            AreaPersonal areaPersonal = new AreaPersonal(keyPair, usuario, cuentaBancariaList, claveServidor);
                             JFrame frame = new JFrame("Área Personal");
                             frame.setContentPane(areaPersonal.getPanelAreaPersonal());
 
@@ -85,7 +83,7 @@ public class LoginGUI {
         cancelarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                System.exit(0);
             }
         });
         registrarButton.addActionListener(new ActionListener() {
@@ -98,7 +96,7 @@ public class LoginGUI {
                 }
                 RegistroGUI registroGUI = null;
                 try {
-                    registroGUI = new RegistroGUI(keyPair, usuarioDAO);
+                    registroGUI = new RegistroGUI(keyPair, usuarioDAO, claveServidor);
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
@@ -110,6 +108,7 @@ public class LoginGUI {
                 frame.pack();
                 frame.setLocationRelativeTo(null);
                 frame.setVisible(true);
+
             }
         });
     }

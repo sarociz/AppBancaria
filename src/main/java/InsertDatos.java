@@ -5,14 +5,13 @@ import models.CuentaBancaria;
 import models.Transferencia;
 import models.Usuario;
 
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.List;
 
+import static ClienteServidor.Server.ClienteHandler.calcularHash;
 
-import static Operaciones.LoginyRegistro.registrarUsuario;
 
 public class InsertDatos {
     public static void main(String[] args) throws IOException {
@@ -70,6 +69,18 @@ public class InsertDatos {
         transferenciaDao.create(transferencia3);
 
 
+    }
+    public static void registrarUsuario(UsuarioDaoImpl usuarioDao, Usuario usuario) {
+        String hashContrasena = calcularHash(usuario.getContrasena());
+
+        if (usuarioDao.existeUsuario(usuario.getUsuario())) {
+            JOptionPane.showMessageDialog(null, "Nombre de usuario en uso. Por favor, elija otro.");
+            return;
+        }
+        usuario.setContrasena(hashContrasena);
+
+        usuarioDao.create(usuario);
+        JOptionPane.showMessageDialog(null,"¡Registro exitoso!");
 
     }
 }
